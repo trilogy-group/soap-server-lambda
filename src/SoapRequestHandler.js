@@ -22,21 +22,9 @@ class SoapRequestHandler {
       );
       const envelope = parsed[envelopeKey];
       const headerKey = this.findKey(envelope, ':Header');
-      const headers = [];
+      let headers = {};
       if (envelope && headerKey && envelope[headerKey]) {
-        const header = envelope[headerKey];
-        if (header && Object.keys(header).length > 0) {
-          for (const [key, value] of Object.entries(header)) {
-            if (!key.startsWith('@')) {
-              headers.push({
-                name: key.substring(
-                  key.indexOf(':') !== -1 ? key.indexOf(':') + 1 : 0,
-                ),
-                value,
-              });
-            }
-          }
-        }
+        headers = envelope[headerKey];
       }
 
       const bodyKey = this.findKey(envelope, ':Body');
