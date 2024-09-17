@@ -1,9 +1,9 @@
 'use strict';
 
-const Parser = require('fast-xml-parser').j2xParser;
+const Parser = require('fast-xml-parser');
 const SoapError = require('./SoapError.js');
 
-const parser = new Parser({
+const parser = new Parser.XMLBuilder({
   ignoreAttributes: false,
   attributesGroupName: 'attributes',
   suppressEmptyNode: true,
@@ -31,10 +31,10 @@ class SoapResponseBodyHandler {
   async success(response) {
     let responseBody = soapBodyStart;
     try {
-      responseBody += parser.parse(response);
+      responseBody += parser.build(response);
     } catch (error) {
       console.error(error);
-      responseBody += parser.parse(this.createFaultResponse(
+      responseBody += parser.build(this.createFaultResponse(
           new SoapError(500, 'Couldn\'t convert the response in xml'),
       ));
     }
@@ -59,7 +59,7 @@ class SoapResponseBodyHandler {
     } catch (ex) {
       error = this.createFaultResponse(error);
     }
-    return soapBodyStart + parser.parse(error) + soapBodyEnd;
+    return soapBodyStart + parser.build(error) + soapBodyEnd;
   }
 
   createFaultResponse(error) {

@@ -40,7 +40,7 @@ class SoapServer {
                 'Cannot read the wsdl file: ' + this.services[service].wsdlPath,
             );
           }
-          if (parser.validate(this.services[service].wsdl) !== true) {
+          if (parser.XMLValidator.validate(this.services[service].wsdl) !== true) {
             throw new Error(
                 'Cannot parse the wsdl file correctly: ' +
                 this.services[service].wsdlPath,

@@ -15,8 +15,8 @@ class SoapRequestHandler {
    * @param {String} body a soap request in xml format
    */
   async getOperation(body) {
-    if (parser.validate(body) === true) {
-      const parsed = parser.parse(body);
+    if (parser.XMLValidator.validate(body) === true) {
+      const parsed = (new parser.XMLParser()).parse(body);
       const envelopeKey = Object.keys(parsed).find((attr) =>
         attr.endsWith(':Envelope'),
       );
