@@ -3,16 +3,19 @@
 const Parser = require('fast-xml-parser').j2xParser;
 const SoapError = require('./SoapError.js');
 
-const parser = new Parser();
+const parser = new Parser({
+  ignoreAttributes: false,
+  attributesGroupName: 'attributes',
+  suppressEmptyNode: true,
+});
 
-let soapBodyStart = '<soap:Envelope\n';
-soapBodyStart += '  xmlns:soap="http://www.w3.org/2001/12/soap-envelope"\n';
-soapBodyStart +=
-  '  soap:encodingStyle="http://www.w3.org/2001/12/soap-encoding">\n';
-soapBodyStart += '  <soap:Body>\n';
+let soapBodyStart = `<?xml version='1.0' encoding='UTF-8'?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+    <soapenv:Body>
+`;
 
-let soapBodyEnd = ' </soap:Body>\n';
-soapBodyEnd += '</soap:Envelope>';
+let soapBodyEnd = `   </soapenv:Body>
+</soapenv:Envelope>`;
 
 /**
  * Soap response body handler class
@@ -31,11 +34,9 @@ class SoapResponseBodyHandler {
       responseBody += parser.parse(response);
     } catch (error) {
       console.error(error);
-      responseBody += this.fault(
+      responseBody += parser.parse(this.createFaultResponse(
           new SoapError(500, 'Couldn\'t convert the response in xml'),
-      );
-      responseBody += '  <soap:faultstring></soap:faultstring>\n';
-      responseBody += ' </soap:Fault>\n';
+      ));
     }
     responseBody += soapBodyEnd;
     return responseBody;
@@ -47,18 +48,35 @@ class SoapResponseBodyHandler {
    * @param {SoapError} error the error object
    */
   async fault(error) {
-    let soapFault = '<soap:Fault>\n';
-    if (error.status) {
-      soapFault += '  <soap:faultcode>';
-      soapFault += error.status;
-      soapFault += '  </soap:faultcode>\n';
+    try {
+      if (error instanceof Error) {
+        error = this.createFaultResponse(error);
+      } else if (error.Fault) {
+        error = {
+          "soapenv:Fault": error.Fault
+        }
+      };
+    } catch (ex) {
+      error = this.createFaultResponse(error);
     }
-    soapFault += '  <soap:faultstring>';
-    soapFault += error.message;
-    soapFault += '  </soap:faultstring>\n';
-    soapFault += '</soap:Fault>\n';
-    return soapBodyStart + soapFault + soapBodyEnd;
+    return soapBodyStart + parser.parse(error) + soapBodyEnd;
   }
+
+  createFaultResponse(error) {
+    return {
+      "soapenv:Fault": {
+        faultcode: "fns:API_ERROR",
+        faultstring: error.message,
+        detail: {
+          "fns:MalformedQueryFault": {
+            "fns:FaultCode": "API_ERROR",
+            "fns:FaultMessage": error.message
+          }
+        },
+        attributes: { "xmlns:fns": "http://fault.api.zuora.com/" }
+      }
+    }
+  };
 }
 
 module.exports = SoapResponseBodyHandler;
