@@ -21,9 +21,25 @@ class SoapRequestHandler {
         attr.endsWith(':Envelope'),
       );
       const envelope = parsed[envelopeKey];
-      const bodyKey = Object.keys(envelope).find((attr) =>
-        attr.endsWith(':Body'),
-      );
+      const headerKey = this.findKey(envelope, ':Header');
+      const headers = [];
+      if (envelope && headerKey && envelope[headerKey]) {
+        const header = envelope[headerKey];
+        if (header && Object.keys(header).length > 0) {
+          for (const [key, value] of Object.entries(header)) {
+            if (!key.startsWith('@')) {
+              headers.push({
+                name: key.substring(
+                  key.indexOf(':') !== -1 ? key.indexOf(':') + 1 : 0,
+                ),
+                value,
+              });
+            }
+          }
+        }
+      }
+
+      const bodyKey = this.findKey(envelope, ':Body');
       if (envelope && envelope[bodyKey]) {
         const soapBody = envelope[bodyKey];
         if (soapBody && Object.keys(soapBody).length > 0) {
@@ -47,6 +63,7 @@ class SoapRequestHandler {
               operation.indexOf(':') !== -1 ? operation.indexOf(':') + 1 : 0,
             ),
             inputs,
+            headers,
           };
         }
       }
@@ -55,6 +72,10 @@ class SoapRequestHandler {
         400,
         'Couldn\'t parse the message or correct operation.',
     );
+  }
+
+  findKey(obj, key) {
+    return Object.keys(obj).find((attr) => attr.endsWith(key));
   }
 }
 
