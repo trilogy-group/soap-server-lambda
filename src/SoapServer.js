@@ -66,7 +66,7 @@ class SoapServer {
       log.debug('Received an event', event);
       // check this service exists
       if (this.services.hasOwnProperty(event.pathParameters.proxy)) {
-        log.info('Received a request for service', {
+        log.debug('Received a request for service', {
           service: event.pathParameters.proxy,
         });
         // get calls
@@ -112,9 +112,15 @@ class SoapServer {
           }
           // get the implementation from the service
           const serviceimpl = this.services[event.pathParameters.proxy].service;
+          const serviceProps = this.services[event.pathParameters.proxy];
           // invoke the method with argument
           let response;
           try {
+            if (serviceProps.authorizeMethod && typeof serviceProps.authorizeMethod === 'function' &&
+                (!serviceProps.skipAuthorization || !serviceProps.skipAuthorization.includes(requestOperation.operation))
+              ) {
+                serviceProps.authorizeMethod(requestOperation.headers);
+            }
             // get the input params
             let params;
             if (requestOperation.inputs) {
