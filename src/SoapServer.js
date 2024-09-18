@@ -40,7 +40,9 @@ class SoapServer {
                 'Cannot read the wsdl file: ' + this.services[service].wsdlPath,
             );
           }
-          if (parser.XMLValidator.validate(this.services[service].wsdl) !== true) {
+          if (
+            parser.XMLValidator.validate(this.services[service].wsdl) !== true
+          ) {
             throw new Error(
                 'Cannot parse the wsdl file correctly: ' +
                 this.services[service].wsdlPath,
@@ -116,10 +118,15 @@ class SoapServer {
           // invoke the method with argument
           let response;
           try {
-            if (serviceProps.authorizeMethod && typeof serviceProps.authorizeMethod === 'function' &&
-                (!serviceProps.skipAuthorization || !serviceProps.skipAuthorization.includes(requestOperation.operation))
-              ) {
-                serviceProps.authorizeMethod(requestOperation.headers);
+            if (
+              serviceProps.authorizeMethod &&
+              typeof serviceProps.authorizeMethod === 'function' &&
+              (!serviceProps.skipAuthorization ||
+                !serviceProps.skipAuthorization.includes(
+                    requestOperation.operation,
+                ))
+            ) {
+              await serviceProps.authorizeMethod(requestOperation.headers);
             }
             // get the input params
             let params;
